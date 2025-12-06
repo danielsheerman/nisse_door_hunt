@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nissedør Jagt</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #c94b4b 0%, #4b134f 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .question-view, .admin-view, .qr-view, .setup-view {
+            display: none;
+        }
+
+        .question-view.active, .admin-view.active, .qr-view.active, .setup-view.active {
+            display: block;
+        }
+
+        .question-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .question-number {
+            color: #667eea;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .question-text {
+            font-size: 1.3em;
+            margin-bottom: 25px;
+            color: #2d3748;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #4a5568;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .success-message {
+            background: #48bb78;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+
+        .admin-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .submissions-list {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .submission-item {
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .submission-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .student-name {
+            font-weight: bold;
+            color: #2d3748;
+            font-size: 1.1em;
+        }
+
+        .question-num {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .answer-text {
+            margin: 10px 0;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            color: #4a5568;
+        }
+
+        .timestamp {
+            font-size: 0.85em;
+            color: #a0aec0;
+        }
+
+        .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .qr-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .qr-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .qr-code {
+            margin: 20px auto;
+            padding: 10px;
+            background: white;
+            display: inline-block;
+        }
+
+        .setup-card {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .setup-card h2 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .setup-card p {
+            color: #856404;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .setup-card code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .container {
+                box-shadow: none;
+            }
+            .admin-controls {
+                display: none;
+            }
+            .qr-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .qr-card {
+                page-break-inside: avoid;
+            }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+        }
+
+        .filter-section select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            font-size: 1em;
+            margin-right: 10px;
+        }
+
+        .url-display {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: monospace;
+            word-break: break-all;
+            border: 2px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎅 Nissedør Jagt 🚪</h1>
+            <p>Find alle 10 nissedøre og besvar spørgsmålene</p>
+        </div>
+
+        <div class="content">
+            <!-- Setup View (first time) -->
+            <div class="setup-view" id="setupView">
+                <div class="setup-card">
+                    <h2>⚙️ Opsætning påkrævet</h2>
+                    <p>Før du kan generere QR-koder, skal du indtaste den korrekte URL til denne side.</p>
+                    <p>Din GitHub Pages URL vil typisk se sådan ud:</p>
+                    <p><code>https://ditbrugernavn.github.io/repository-navn/index.html</code></p>
+                    <p>eller bare:</p>
+                    <p><code>https://ditbrugernavn.github.io/repository-navn/</code></p>
+                </div>
+
+                <div class="form-group">
+                    <label for="baseUrlInput">Indtast din GitHub Pages URL:</label>
+                    <input type="url" id="baseUrlInput" placeholder="https://ditbrugernavn.github.io/nissedoer/" required>
+                </div>
+
+                <button class="btn" onclick="saveBaseURL()">💾 Gem URL og fortsæt</button>
+
+                <div style="margin-top: 30px; padding: 20px; background: #e6f7ff; border-radius: 10px;">
+                    <h3 style="color: #0066cc; margin-bottom: 10px;">💡 Ikke sikker på din URL?</h3>
+                    <p style="color: #004085;">Du kan finde den i dine GitHub repository indstillinger under "Pages". Når du har uploadet denne fil, vil GitHub vise dig den præcise URL.</p>
+                </div>
+            </div>
+
+            <!-- Question View (for students) -->
+            <div class="question-view" id="questionView">
+                <div class="question-card">
+                    <div class="question-number" id="questionNumber">Nissedør #1</div>
+                    <div class="question-text" id="questionText"></div>
+                </div>
+
+                <form id="answerForm">
+                    <div class="form-group">
+                        <label for="studentName">Dit navn:</label>
+                        <input type="text" id="studentName" required placeholder="Indtast dit fulde navn">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="studentAnswer">Dit svar:</label>
+                        <textarea id="studentAnswer" required placeholder="Skriv dit svar her..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn">Send svar</button>
+                </form>
+
+                <div id="successMessage" style="display: none;" class="success-message">
+                    ✅ Tak for dit svar! Find den næste nissedør!
+                </div>
+            </div>
+
+            <!-- Admin View -->
+            <div class="admin-view" id="adminView">
+                <div class="admin-controls">
+                    <button class="btn" onclick="showQRCodes()">📱 Vis QR-koder</button>
+                    <button class="btn btn-secondary" onclick="downloadData()">💾 Download Data</button>
+                    <button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button>
+                    <button class="btn btn-secondary" onclick="editURL()">🔧 Rediger URL</button>
+                    <button class="btn btn-secondary" onclick="clearAllData()">🗑️ Slet alt data</button>
+                </div>
+
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalSubmissions">0</div>
+                        <div class="stat-label">Besvarelser</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="uniqueStudents">0</div>
+                        <div class="stat-label">Elever</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="questionsAnswered">0</div>
+                        <div class="stat-label">Spørgsmål besvaret</div>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <select id="filterStudent" onchange="filterSubmissions()">
+                        <option value="">Alle elever</option>
+                    </select>
+                    <select id="filterQuestion" onchange="filterSubmissions()">
+                        <option value="">Alle spørgsmål</option>
+                    </select>
+                </div>
+
+                <div class="submissions-list" id="submissionsList"></div>
+            </div>
+
+            <!-- QR Code View -->
+            <div class="qr-view" id="qrView">
+                <div class="admin-controls">
+                    <button class="btn" onclick="showAdmin()">← Tilbage til admin</button>
+                    <button class="btn btn-secondary" onclick="window.print()">🖨️ Print QR-koder</button>
+                </div>
+
+                <div class="url-display">
+                    <strong>Din base URL:</strong> <span id="displayBaseURL"></span>
+                </div>
+
+                <div class="qr-grid" id="qrGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Questions for each nissedør
+        const questions = [
+            "Hvad hedder den kemiske proces, hvor planter omdanner sollys til energi?",
+            "Hvor mange ben har en edderkop?",
+            "Hvad er hovedstaden i Danmark?",
+            "Hvad er formlen for vand?",
+            "Hvor mange planeter er der i vores solsystem?",
+            "Hvad hedder den kraft, der holder os på jorden?",
+            "Hvad er 7 × 8?",
+            "Hvad hedder det organ, der pumper blod rundt i kroppen?",
+            "Hvor mange grader er der i en ret vinkel?",
+            "Hvad hedder den mindste del af et grundstof?"
+        ];
+
+        // Initialize
+        let submissions = JSON.parse(localStorage.getItem('submissions') || '[]');
+        let baseURL = localStorage.getItem('baseURL') || '';
+
+        // Check if this is a question link, admin view, or setup needed
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const questionId = urlParams.get('q');
+            
+            if (questionId && questionId >= 1 && questionId <= 10) {
+                showQuestion(questionId);
+            } else if (!baseURL) {
+                showSetup();
+            } else {
+                showAdmin();
+            }
+        };
+
+        function showSetup() {
+            document.getElementById('setupView').classList.add('active');
+            document.getElementById('questionView').classList.remove('active');
+            document.getElementById('adminView').classList.remove('active');
+            document.getElementById('qrView').classList.remove('active');
+        }
+
+        function saveBaseURL() {
+            const input = document.getElementById('baseUrlInput').value.trim();
+            if (!input) {
+                alert('Indtast venligst en URL');
+                return;
+            }
+
+            // Remove trailing slash if present
+            baseURL = input.endsWith('/') ? input.slice(0, -1) : input;
+            localStorage.setItem('baseURL', baseURL);
+            showAdmin();
+        }
+
+        function editURL() {
+            const newURL = prompt('Indtast ny base URL:', baseURL);
+            if (newURL) {
+                baseURL = newURL.endsWith('/') ? newURL.slice(0, -1) : newURL;
+                localStorage.setItem('baseURL', baseURL);
+                alert('URL opdateret! Generer QR-koderne igen.');
+            }
+        }
+
+        function showQuestion(questionId) {
+            const index = parseInt(questionId) - 1;
+            document.getElementById('questionNumber').textContent = `Nissedør #${questionId}`;
+            document.getElementById('questionText').textContent = questions[index];
+            
+            document.getElementById('setupView').classList.remove('active');
+            document.getElementById('questionView').classList.add('active');
+            document.getElementById('adminView').classList.remove('active');
+            document.getElementById('qrView').classList.remove('active');
+        }
+
+        function showAdmin() {
+            document.getElementById('setupView').classList.remove('active');
+            document.getElementById('questionView').classList.remove('active');
+            document.getElementById('adminView').classList.add('active');
+            document.getElementById('qrView').classList.remove('active');
+            
+            updateStats();
+            displaySubmissions();
+            updateFilters();
+        }
+
+        function showQRCodes() {
+            if (!baseURL) {
+                alert('Du skal først opsætte base URL!');
+                showSetup();
+                return;
+            }
+
+            document.getElementById('setupView').classList.remove('active');
+            document.getElementById('questionView').classList.remove('active');
+            document.getElementById('adminView').classList.remove('active');
+            document.getElementById('qrView').classList.add('active');
+            
+            document.getElementById('displayBaseURL').textContent = baseURL;
+            generateQRCodes();
+        }
+
+        function generateQRCodes() {
+            const qrGrid = document.getElementById('qrGrid');
+            qrGrid.innerHTML = '';
+
+            for (let i = 1; i <= 10; i++) {
+                const qrCard = document.createElement('div');
+                qrCard.className = 'qr-card';
+                
+                const title = document.createElement('h3');
+                title.textContent = `Nissedør #${i}`;
+                qrCard.appendChild(title);
+
+                const qrDiv = document.createElement('div');
+                qrDiv.className = 'qr-code';
+                qrDiv.id = `qr${i}`;
+                qrCard.appendChild(qrDiv);
+
+                const questionText = document.createElement('p');
+                questionText.textContent = questions[i-1];
+                questionText.style.fontSize = '0.9em';
+                questionText.style.color = '#4a5568';
+                questionText.style.marginTop = '10px';
+                qrCard.appendChild(questionText);
+
+                const urlText = document.createElement('p');
+                urlText.textContent = `${baseURL}?q=${i}`;
+                urlText.style.fontSize = '0.7em';
+                urlText.style.color = '#a0aec0';
+                urlText.style.marginTop = '5px';
+                urlText.style.wordBreak = 'break-all';
+                qrCard.appendChild(urlText);
+
+                qrGrid.appendChild(qrCard);
+
+                // Generate QR code
+                new QRCode(qrDiv, {
+                    text: `${baseURL}?q=${i}`,
+                    width: 200,
+                    height: 200
+                });
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('answerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const questionId = urlParams.get('q');
+            const studentName = document.getElementById('studentName').value.trim();
+            const answer = document.getElementById('studentAnswer').value.trim();
+
+            const submission = {
+                questionId: parseInt(questionId),
+                studentName: studentName,
+                answer: answer,
+                timestamp: new Date().toISOString()
+            };
+
+            submissions.push(submission);
+            localStorage.setItem('submissions', JSON.stringify(submissions));
+
+            // Show success message
+            document.getElementById('answerForm').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'block';
+
+            setTimeout(() => {
+                document.getElementById('successMessage').style.display = 'none';
+                document.getElementById('answerForm').style.display = 'block';
+                document.getElementById('answerForm').reset();
+            }, 3000);
+        });
+
+        function updateStats() {
+            const totalSubs = submissions.length;
+            const uniqueStudentsSet = new Set(submissions.map(s => s.studentName.toLowerCase()));
+            const uniqueStudentsCount = uniqueStudentsSet.size;
+            const questionsAnsweredSet = new Set(submissions.map(s => s.questionId));
+            const questionsAnsweredCount = questionsAnsweredSet.size;
+
+            document.getElementById('totalSubmissions').textContent = totalSubs;
+            document.getElementById('uniqueStudents').textContent = uniqueStudentsCount;
+            document.getElementById('questionsAnswered').textContent = questionsAnsweredCount;
+        }
+
+        function displaySubmissions() {
+            const container = document.getElementById('submissionsList');
+            
+            if (submissions.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #a0aec0; padding: 40px;">Ingen besvarelser endnu</p>';
+                return;
+            }
+
+            // Sort by timestamp (newest first)
+            const sorted = [...submissions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            container.innerHTML = sorted.map(sub => `
+                <div class="submission-item">
+                    <div class="submission-header">
+                        <span class="student-name">${sub.studentName}</span>
+                        <span class="question-num">Nissedør #${sub.questionId}</span>
+                    </div>
+                    <div style="color: #718096; margin-bottom: 10px; font-weight: 500;">
+                        ${questions[sub.questionId - 1]}
+                    </div>
+                    <div class="answer-text">${sub.answer}</div>
+                    <div class="timestamp">${new Date(sub.timestamp).toLocaleString('da-DK')}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateFilters() {
+            // Update student filter
+            const studentFilter = document.getElementById('filterStudent');
+            const uniqueStudents = [...new Set(submissions.map(s => s.studentName))].sort();
+            studentFilter.innerHTML = '<option value="">Alle elever</option>' + 
+                uniqueStudents.map(name => `<option value="${name}">${name}</option>`).join('');
+
+            // Update question filter
+            const questionFilter = document.getElementById('filterQuestion');
+            questionFilter.innerHTML = '<option value="">Alle spørgsmål</option>' +
+                Array.from({length: 10}, (_, i) => i + 1)
+                    .map(num => `<option value="${num}">Nissedør #${num}</option>`).join('');
+        }
+
+        function filterSubmissions() {
+            const studentFilter = document.getElementById('filterStudent').value;
+            const questionFilter = document.getElementById('filterQuestion').value;
+
+            let filtered = submissions;
+
+            if (studentFilter) {
+                filtered = filtered.filter(s => s.studentName === studentFilter);
+            }
+
+            if (questionFilter) {
+                filtered = filtered.filter(s => s.questionId === parseInt(questionFilter));
+            }
+
+            // Temporarily replace submissions for display
+            const originalSubmissions = submissions;
+            submissions = filtered;
+            displaySubmissions();
+            submissions = originalSubmissions;
+        }
+
+        function downloadData() {
+            const data = {
+                exportDate: new Date().toISOString(),
+                questions: questions,
+                submissions: submissions
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `nissedoer-data-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function clearAllData() {
+            if (confirm('Er du sikker på, at du vil slette ALLE besvarelser? Dette kan ikke fortrydes!')) {
+                if (confirm('Sidste advarsel! Dette sletter alt data permanent.')) {
+                    submissions = [];
+                    localStorage.removeItem('submissions');
+                    showAdmin();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
