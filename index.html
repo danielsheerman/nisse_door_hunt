@@ -402,13 +402,13 @@
         // PASTE YOUR FIREBASE VALUES HERE:
         // ==========================================
         const FIREBASE_CONFIG = {
-            apiKey: "AIzaSyAkMZgZ76xJYX5eu6eC5-vgz1s2wDy9g24",           // Replace with your API Key
-            projectId: "nissedoer-skals",      // Replace with your Project ID
-            appId: "1:37215276120:web:8c7cf21f75aa765ace0e2d"               // Replace with your App ID
+            apiKey: "YOUR_API_KEY_HERE",           // Replace with your API Key
+            projectId: "YOUR_PROJECT_ID_HERE",      // Replace with your Project ID
+            appId: "YOUR_APP_ID_HERE"               // Replace with your App ID
         };
 
         // Your GitHub Pages URL (without trailing slash)
-        const BASE_URL = "https://danielsheerman.github.io/nisse_door_hunt";  // e.g., "https://yourusername.github.io/nissedoer"
+        const BASE_URL = "YOUR_GITHUB_PAGES_URL_HERE";  // e.g., "https://yourusername.github.io/nissedoer"
         
         // ==========================================
         // END OF CONFIGURATION
@@ -456,6 +456,58 @@
                    BASE_URL !== "YOUR_GITHUB_PAGES_URL_HERE";
         }
 
+        // Load questions from Firebase
+        async function loadQuestionsFromFirebase() {
+            if (!db) return;
+            
+            try {
+                console.log('Loading questions from Firebase...');
+                const docRef = db.collection('config').doc('questions');
+                const doc = await docRef.get();
+                
+                if (doc.exists) {
+                    const data = doc.data();
+                    console.log('Questions loaded from Firebase:', data);
+                    questions = data.questions || defaultQuestions;
+                    answerKeys = data.answerKeys || defaultAnswerKeys;
+                    
+                    // Also save to localStorage as backup
+                    localStorage.setItem('customQuestions', JSON.stringify(questions));
+                    localStorage.setItem('answerKeys', JSON.stringify(answerKeys));
+                } else {
+                    console.log('No questions in Firebase yet, using defaults');
+                    // Save defaults to Firebase
+                    await saveQuestionsToFirebase();
+                }
+            } catch (error) {
+                console.error('Error loading questions from Firebase:', error);
+                // Fall back to localStorage or defaults
+            }
+        }
+
+        // Save questions to Firebase
+        async function saveQuestionsToFirebase() {
+            if (!db) {
+                console.error('Cannot save questions: Database not initialized');
+                return false;
+            }
+            
+            try {
+                console.log('Saving questions to Firebase...');
+                await db.collection('config').doc('questions').set({
+                    questions: questions,
+                    answerKeys: answerKeys,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                console.log('✅ Questions saved to Firebase');
+                return true;
+            } catch (error) {
+                console.error('❌ Error saving questions to Firebase:', error);
+                alert(`Kunne ikke gemme spørgsmål til Firebase.\n\nFejl: ${error.message}`);
+                return false;
+            }
+        }
+
         // Initialize app
         window.onload = async function() {
             if (!isConfigured()) {
@@ -469,6 +521,9 @@
 
             // Initialize Firebase
             await initFirebase();
+            
+            // Load questions from Firebase (so all devices see the same questions)
+            await loadQuestionsFromFirebase();
 
             // Check if this is a question link
             if (questionId && questionId >= 1 && questionId <= 10) {
@@ -778,12 +833,19 @@
             questions = newQ;
             answerKeys = newA;
             
+            // Save to localStorage as backup
             localStorage.setItem('customQuestions', JSON.stringify(questions));
             localStorage.setItem('answerKeys', JSON.stringify(answerKeys));
             
-            const indicator = document.getElementById('saveIndicator');
-            indicator.classList.add('show');
-            setTimeout(() => indicator.classList.remove('show'), 2000);
+            // Save to Firebase so all devices see the updates
+            saveQuestionsToFirebase().then(success => {
+                if (success) {
+                    const indicator = document.getElementById('saveIndicator');
+                    indicator.textContent = '✅ Gemt til Firebase!';
+                    indicator.classList.add('show');
+                    setTimeout(() => indicator.classList.remove('show'), 2000);
+                }
+            });
         }
 
         function calculateAllStudentScores() {
