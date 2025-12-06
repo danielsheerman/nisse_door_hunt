@@ -2,9 +2,14 @@
 <html lang="da">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport"="width=device-width, initial-scale=1.0">
     <title>Nissedør Jagt</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -20,7 +25,7 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             background: white;
             border-radius: 20px;
@@ -49,12 +54,65 @@
             padding: 40px;
         }
 
-        .question-view, .admin-view, .qr-view, .setup-view {
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .loading:after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .question-view, .admin-view, .qr-view, .setup-view, .editor-view, .reports-view {
             display: none;
         }
 
-        .question-view.active, .admin-view.active, .qr-view.active, .setup-view.active {
+        .question-view.active, .admin-view.active, .qr-view.active, .setup-view.active, .editor-view.active, .reports-view.active {
             display: block;
+        }
+
+        .setup-card {
+            background: #e6f7ff;
+            border: 2px solid #0066cc;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .setup-card h2 {
+            color: #004085;
+            margin-bottom: 15px;
+        }
+
+        .setup-card p, .setup-card ol, .setup-card li {
+            color: #004085;
+            line-height: 1.8;
+        }
+
+        .setup-card ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .setup-card a {
+            color: #0066cc;
+            font-weight: bold;
+        }
+
+        .setup-card code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
         }
 
         .question-card {
@@ -128,6 +186,12 @@
             transform: translateY(0);
         }
 
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-secondary {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
@@ -142,130 +206,21 @@
             margin-top: 20px;
         }
 
+        .error-message {
+            background: #fc8181;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.1em;
+            margin-top: 20px;
+        }
+
         .admin-controls {
             display: flex;
             gap: 10px;
             margin-bottom: 30px;
             flex-wrap: wrap;
-        }
-
-        .submissions-list {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 20px;
-        }
-
-        .submission-item {
-            background: white;
-            padding: 20px;
-            margin-bottom: 15px;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
-        }
-
-        .submission-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .student-name {
-            font-weight: bold;
-            color: #2d3748;
-            font-size: 1.1em;
-        }
-
-        .question-num {
-            color: #667eea;
-            font-weight: bold;
-        }
-
-        .answer-text {
-            margin: 10px 0;
-            padding: 15px;
-            background: #f7fafc;
-            border-radius: 8px;
-            color: #4a5568;
-        }
-
-        .timestamp {
-            font-size: 0.85em;
-            color: #a0aec0;
-        }
-
-        .qr-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            margin-top: 30px;
-        }
-
-        .qr-card {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        .qr-card h3 {
-            color: #667eea;
-            margin-bottom: 15px;
-        }
-
-        .qr-code {
-            margin: 20px auto;
-            padding: 10px;
-            background: white;
-            display: inline-block;
-        }
-
-        .setup-card {
-            background: #fff3cd;
-            border: 2px solid #ffc107;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 20px;
-        }
-
-        .setup-card h2 {
-            color: #856404;
-            margin-bottom: 15px;
-        }
-
-        .setup-card p {
-            color: #856404;
-            line-height: 1.6;
-            margin-bottom: 10px;
-        }
-
-        .setup-card code {
-            background: #fff;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-        }
-
-        @media print {
-            body {
-                background: white;
-            }
-            .container {
-                box-shadow: none;
-            }
-            .admin-controls {
-                display: none;
-            }
-            .qr-grid {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .qr-card {
-                page-break-inside: avoid;
-            }
         }
 
         .stats {
@@ -294,26 +249,85 @@
             opacity: 0.9;
         }
 
-        .filter-section {
+        .submissions-list, .reports-list {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .submission-item, .student-report-card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .qr-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .qr-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .save-indicator {
+            background: #48bb78;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .save-indicator.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .connection-status {
+            padding: 10px 20px;
+            border-radius: 8px;
             margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
         }
 
-        .filter-section select {
-            padding: 10px;
-            border-radius: 8px;
-            border: 2px solid #e2e8f0;
-            font-size: 1em;
-            margin-right: 10px;
+        .connection-status.connected {
+            background: #c6f6d5;
+            color: #22543d;
         }
 
-        .url-display {
-            background: #f7fafc;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            font-family: monospace;
-            word-break: break-all;
-            border: 2px solid #e2e8f0;
+        .connection-status.error {
+            background: #fed7d7;
+            color: #742a2a;
         }
     </style>
 </head>
@@ -325,32 +339,119 @@
         </div>
 
         <div class="content">
+            <div id="loadingIndicator" class="loading">Indlæser app</div>
+
             <!-- Setup View (first time) -->
             <div class="setup-view" id="setupView">
                 <div class="setup-card">
-                    <h2>⚙️ Opsætning påkrævet</h2>
-                    <p>Før du kan generere QR-koder, skal du indtaste den korrekte URL til denne side.</p>
-                    <p>Din GitHub Pages URL vil typisk se sådan ud:</p>
-                    <p><code>https://ditbrugernavn.github.io/repository-navn/index.html</code></p>
-                    <p>eller bare:</p>
-                    <p><code>https://ditbrugernavn.github.io/repository-navn/</code></p>
+                    <h2>🚀 Hurtig opsætning (2 minutter)</h2>
+                    <p style="margin-bottom: 15px;">Denne app bruger Firebase (Googles gratis database) til at gemme alle besvarelser ét centralt sted.</p>
+                    <p style="font-weight: bold;">Følg disse simple trin:</p>
+                </div>
+
+                <div class="setup-card">
+                    <h3 style="margin-bottom: 10px;">📝 Trin 1: Opret Firebase projekt</h3>
+                    <ol>
+                        <li>Åbn <a href="https://console.firebase.google.com/" target="_blank">console.firebase.google.com</a> i en ny fane</li>
+                        <li>Log ind med din Google-konto</li>
+                        <li>Klik "Add project" / "Tilføj projekt"</li>
+                        <li>Giv projektet et navn (f.eks. "nissedoer-skals")</li>
+                        <li>Deaktiver Google Analytics (ikke nødvendigt)</li>
+                        <li>Klik "Create project" og vent ~30 sekunder</li>
+                    </ol>
+                </div>
+
+                <div class="setup-card">
+                    <h3 style="margin-bottom: 10px;">🗄️ Trin 2: Aktiver Firestore Database</h3>
+                    <ol>
+                        <li>I dit nye Firebase projekt, klik "Firestore Database" i venstre menu</li>
+                        <li>Klik "Create database"</li>
+                        <li><strong>Vigtigt:</strong> Vælg "Start in <strong>test mode</strong>"</li>
+                        <li>Vælg location "eur3 (europe-west)" (eller nærmeste Europa)</li>
+                        <li>Klik "Enable" og vent ~30 sekunder</li>
+                    </ol>
+                </div>
+
+                <div class="setup-card">
+                    <h3 style="margin-bottom: 10px;">🔑 Trin 3: Hent dine Firebase detaljer</h3>
+                    <ol>
+                        <li>I Firebase, klik på tandhjulet ⚙️ øverst i venstre menu</li>
+                        <li>Vælg "Project settings"</li>
+                        <li>Scroll ned til "Your apps" sektionen</li>
+                        <li>Klik på web-ikonet (<code>&lt;/&gt;</code>)</li>
+                        <li>Giv appen et navn (f.eks. "Nissedør App")</li>
+                        <li>Kopiér de tre værdier fra <code>firebaseConfig</code> nedenfor til felterne her:</li>
+                    </ol>
+                </div>
+
+                <h3 style="margin: 30px 0 15px 0; color: #2d3748;">Indtast Firebase værdier:</h3>
+
+                <div class="form-group">
+                    <label for="firebaseApiKey">API Key: <span style="font-size: 0.9em; color: #718096;">(starter med "AIzaSy...")</span></label>
+                    <input type="text" id="firebaseApiKey" placeholder="AIzaSyABC..." required>
                 </div>
 
                 <div class="form-group">
-                    <label for="baseUrlInput">Indtast din GitHub Pages URL:</label>
-                    <input type="url" id="baseUrlInput" placeholder="https://ditbrugernavn.github.io/nissedoer/" required>
+                    <label for="firebaseProjectId">Project ID: <span style="font-size: 0.9em; color: #718096;">(dit projekt navn)</span></label>
+                    <input type="text" id="firebaseProjectId" placeholder="nissedoer-skals" required>
                 </div>
 
-                <button class="btn" onclick="saveBaseURL()">💾 Gem URL og fortsæt</button>
+                <div class="form-group">
+                    <label for="firebaseAppId">App ID: <span style="font-size: 0.9em; color: #718096;">(starter med "1:...")</span></label>
+                    <input type="text" id="firebaseAppId" placeholder="1:123456789:web:abc..." required>
+                </div>
 
-                <div style="margin-top: 30px; padding: 20px; background: #e6f7ff; border-radius: 10px;">
-                    <h3 style="color: #0066cc; margin-bottom: 10px;">💡 Ikke sikker på din URL?</h3>
-                    <p style="color: #004085;">Du kan finde den i dine GitHub repository indstillinger under "Pages". Når du har uploadet denne fil, vil GitHub vise dig den præcise URL.</p>
+                <h3 style="margin: 30px 0 15px 0; color: #2d3748;">Indtast din GitHub Pages URL:</h3>
+
+                <div class="form-group">
+                    <label for="baseUrlInput">Base URL:</label>
+                    <input type="url" id="baseUrlInput" placeholder="https://ditbrugernavn.github.io/nissedoer" required>
+                </div>
+
+                <button class="btn" onclick="saveFirebaseConfig()">💾 Gem og start app</button>
+
+                <div style="margin-top: 30px; padding: 20px; background: #f0f4f8; border-radius: 10px;">
+                    <h4 style="color: #2d3748; margin-bottom: 10px;">✅ Hvorfor er dette værd det?</h4>
+                    <ul style="color: #4a5568; line-height: 2;">
+                        <li>✓ Alle besvarelser gemmes automatisk i skyen</li>
+                        <li>✓ Du kan se besvarelser fra enhver computer</li>
+                        <li>✓ Real-time opdateringer (ingen refresh nødvendig)</li>
+                        <li>✓ 100% gratis (op til 50.000 læsninger/dag)</li>
+                        <li>✓ Data ejes af dig, kan downloades når som helst</li>
+                    </ul>
+                </div>
+
+                <div style="margin-top: 20px; padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px;">
+                    <h4 style="color: #856404; margin-bottom: 10px;">⚠️ Vigtigt: Tjek Firestore regler</h4>
+                    <p style="color: #856404; line-height: 1.8; margin-bottom: 10px;">
+                        Hvis du får fejl når elever sender svar, skal du tjekke Firestore security rules:
+                    </p>
+                    <ol style="color: #856404; line-height: 2; margin-left: 20px;">
+                        <li>Gå til Firebase Console → Firestore Database</li>
+                        <li>Klik på "Rules" fanen</li>
+                        <li>Sørg for reglerne ser sådan ud:</li>
+                    </ol>
+                    <pre style="background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 8px; margin-top: 10px; overflow-x: auto; font-size: 0.9em;">
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}</pre>
+                    <p style="color: #856404; margin-top: 10px; font-size: 0.9em;">
+                        <strong>Note:</strong> Disse regler tillader alle at læse/skrive. Det er fint til denne app, men når aktiviteten er færdig, kan du ændre reglerne til <code>if false</code> for at lukke adgangen.
+                    </p>
                 </div>
             </div>
 
-            <!-- Question View (for students) -->
+            <!-- Question View -->
             <div class="question-view" id="questionView">
+                <div id="questionConnectionStatus" class="connection-status" style="display: none;">
+                    Tjekker forbindelse...
+                </div>
+
                 <div class="question-card">
                     <div class="question-number" id="questionNumber">Nissedør #1</div>
                     <div class="question-text" id="questionText"></div>
@@ -367,22 +468,30 @@
                         <textarea id="studentAnswer" required placeholder="Skriv dit svar her..."></textarea>
                     </div>
 
-                    <button type="submit" class="btn">Send svar</button>
+                    <button type="submit" class="btn" id="submitBtn">Send svar</button>
                 </form>
 
                 <div id="successMessage" style="display: none;" class="success-message">
                     ✅ Tak for dit svar! Find den næste nissedør!
                 </div>
+
+                <div id="errorMessage" style="display: none;" class="error-message">
+                    ❌ Der skete en fejl. Prøv venligst igen.
+                </div>
             </div>
 
             <!-- Admin View -->
             <div class="admin-view" id="adminView">
+                <div id="connectionStatus" class="connection-status connected">
+                    ✓ Forbundet til Firebase
+                </div>
+
                 <div class="admin-controls">
                     <button class="btn" onclick="showQRCodes()">📱 Vis QR-koder</button>
-                    <button class="btn btn-secondary" onclick="downloadData()">💾 Download Data</button>
-                    <button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button>
-                    <button class="btn btn-secondary" onclick="editURL()">🔧 Rediger URL</button>
-                    <button class="btn btn-secondary" onclick="clearAllData()">🗑️ Slet alt data</button>
+                    <button class="btn" onclick="showQuestionEditor()">✏️ Rediger spørgsmål</button>
+                    <button class="btn" onclick="showStudentReports()">📊 Elevrapporter</button>
+                    <button class="btn btn-secondary" onclick="refreshData()">🔄 Opdater</button>
+                    <button class="btn btn-secondary" onclick="resetConfig()">🔧 Nulstil konfiguration</button>
                 </div>
 
                 <div class="stats">
@@ -398,39 +507,55 @@
                         <div class="stat-number" id="questionsAnswered">0</div>
                         <div class="stat-label">Spørgsmål besvaret</div>
                     </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">
+                        <div class="stat-number" id="perfectScores">0</div>
+                        <div class="stat-label">Elever med 10/10</div>
+                    </div>
                 </div>
 
-                <div class="filter-section">
-                    <select id="filterStudent" onchange="filterSubmissions()">
-                        <option value="">Alle elever</option>
-                    </select>
-                    <select id="filterQuestion" onchange="filterSubmissions()">
-                        <option value="">Alle spørgsmål</option>
-                    </select>
+                <div class="submissions-list" id="submissionsList">
+                    <p style="text-align: center; color: #a0aec0; padding: 40px;">Ingen besvarelser endnu</p>
                 </div>
-
-                <div class="submissions-list" id="submissionsList"></div>
             </div>
 
-            <!-- QR Code View -->
+            <!-- QR View (simplified) -->
             <div class="qr-view" id="qrView">
                 <div class="admin-controls">
-                    <button class="btn" onclick="showAdmin()">← Tilbage til admin</button>
-                    <button class="btn btn-secondary" onclick="window.print()">🖨️ Print QR-koder</button>
+                    <button class="btn" onclick="showAdmin()">← Tilbage</button>
+                    <button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button>
                 </div>
-
-                <div class="url-display">
-                    <strong>Din base URL:</strong> <span id="displayBaseURL"></span>
-                </div>
-
                 <div class="qr-grid" id="qrGrid"></div>
+            </div>
+
+            <!-- Editor View (simplified) -->
+            <div class="editor-view" id="editorView">
+                <div class="admin-controls">
+                    <button class="btn" onclick="showAdmin()">← Tilbage</button>
+                    <button class="btn" onclick="saveQuestions()">💾 Gem</button>
+                </div>
+                <div id="questionEditorList"></div>
+            </div>
+
+            <!-- Reports View (simplified) -->
+            <div class="reports-view" id="reportsView">
+                <div class="admin-controls">
+                    <button class="btn" onclick="showAdmin()">← Tilbage</button>
+                </div>
+                <div class="reports-list" id="reportsList"></div>
             </div>
         </div>
     </div>
 
+    <div class="save-indicator" id="saveIndicator">✅ Gemt!</div>
+
     <script>
-        // Questions for each nissedør
-        const questions = [
+        // Firebase and app state
+        let db = null;
+        let firebaseInitialized = false;
+        let baseURL = localStorage.getItem('baseURL') || '';
+        
+        // Default questions
+        const defaultQuestions = [
             "Hvad hedder den kemiske proces, hvor planter omdanner sollys til energi?",
             "Hvor mange ben har en edderkop?",
             "Hvad er hovedstaden i Danmark?",
@@ -443,174 +568,288 @@
             "Hvad hedder den mindste del af et grundstof?"
         ];
 
-        // Initialize
-        let submissions = JSON.parse(localStorage.getItem('submissions') || '[]');
-        let baseURL = localStorage.getItem('baseURL') || '';
+        const defaultAnswerKeys = [
+            "Fotosyntese",
+            "8",
+            "København",
+            "H2O",
+            "8",
+            "Tyngdekraft",
+            "56",
+            "Hjertet",
+            "90",
+            "Atom"
+        ];
 
-        // Check if this is a question link, admin view, or setup needed
-        window.onload = function() {
+        let questions = JSON.parse(localStorage.getItem('customQuestions')) || defaultQuestions;
+        let answerKeys = JSON.parse(localStorage.getItem('answerKeys')) || defaultAnswerKeys;
+        let submissions = [];
+
+        // Initialize app
+        window.onload = async function() {
+            const config = JSON.parse(localStorage.getItem('firebaseConfig') || 'null');
+            baseURL = localStorage.getItem('baseURL') || '';
+
             const urlParams = new URLSearchParams(window.location.search);
             const questionId = urlParams.get('q');
-            
+
+            // Check if this is a question link
             if (questionId && questionId >= 1 && questionId <= 10) {
+                if (!config) {
+                    showError('App ikke konfigureret. Kontakt din lærer.');
+                    return;
+                }
+                await initFirebase(config);
                 showQuestion(questionId);
-            } else if (!baseURL) {
-                showSetup();
             } else {
-                showAdmin();
+                // Admin view
+                if (!config || !baseURL) {
+                    hideLoading();
+                    showSetup();
+                } else {
+                    await initFirebase(config);
+                    await loadSubmissions();
+                    showAdmin();
+                }
             }
         };
 
-        function showSetup() {
-            document.getElementById('setupView').classList.add('active');
-            document.getElementById('questionView').classList.remove('active');
-            document.getElementById('adminView').classList.remove('active');
-            document.getElementById('qrView').classList.remove('active');
+        async function initFirebase(config) {
+            try {
+                firebase.initializeApp({
+                    apiKey: config.apiKey,
+                    projectId: config.projectId,
+                    appId: config.appId,
+                    authDomain: `${config.projectId}.firebaseapp.com`,
+                    storageBucket: `${config.projectId}.appspot.com`,
+                    databaseURL: `https://${config.projectId}.firebaseio.com`
+                });
+                
+                db = firebase.firestore();
+                firebaseInitialized = true;
+                hideLoading();
+            } catch (error) {
+                console.error('Firebase init error:', error);
+                showError('Kunne ikke forbinde til Firebase. Tjek din konfiguration.');
+                hideLoading();
+            }
         }
 
-        function saveBaseURL() {
-            const input = document.getElementById('baseUrlInput').value.trim();
-            if (!input) {
-                alert('Indtast venligst en URL');
+        function saveFirebaseConfig() {
+            const apiKey = document.getElementById('firebaseApiKey').value.trim();
+            const projectId = document.getElementById('firebaseProjectId').value.trim();
+            const appId = document.getElementById('firebaseAppId').value.trim();
+            const url = document.getElementById('baseUrlInput').value.trim();
+
+            if (!apiKey || !projectId || !appId || !url) {
+                alert('Udfyld venligst alle felter');
                 return;
             }
 
-            // Remove trailing slash if present
-            baseURL = input.endsWith('/') ? input.slice(0, -1) : input;
-            localStorage.setItem('baseURL', baseURL);
-            showAdmin();
+            const config = { apiKey, projectId, appId };
+            localStorage.setItem('firebaseConfig', JSON.stringify(config));
+            localStorage.setItem('baseURL', url.endsWith('/') ? url.slice(0, -1) : url);
+            
+            alert('Konfiguration gemt! Siden genindlæses...');
+            window.location.reload();
         }
 
-        function editURL() {
-            const newURL = prompt('Indtast ny base URL:', baseURL);
-            if (newURL) {
-                baseURL = newURL.endsWith('/') ? newURL.slice(0, -1) : newURL;
-                localStorage.setItem('baseURL', baseURL);
-                alert('URL opdateret! Generer QR-koderne igen.');
+        function resetConfig() {
+            if (confirm('Er du sikker? Dette sletter Firebase konfigurationen (IKKE data i databasen).')) {
+                localStorage.removeItem('firebaseConfig');
+                localStorage.removeItem('baseURL');
+                window.location.reload();
             }
+        }
+
+        async function loadSubmissions() {
+            if (!db) {
+                console.error('Database not initialized');
+                return;
+            }
+            
+            try {
+                console.log('Attempting to load submissions from Firestore...');
+                const snapshot = await db.collection('submissions').get();
+                console.log(`Found ${snapshot.size} submissions in database`);
+                
+                submissions = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    console.log('Submission:', data);
+                    submissions.push({ id: doc.id, ...data });
+                });
+                
+                console.log('Total submissions loaded:', submissions.length);
+                updateStats();
+                displaySubmissions();
+            } catch (error) {
+                console.error('Load error details:', error);
+                console.error('Error code:', error.code);
+                console.error('Error message:', error.message);
+                
+                const statusDiv = document.getElementById('connectionStatus');
+                if (statusDiv) {
+                    statusDiv.className = 'connection-status error';
+                    statusDiv.textContent = `❌ Fejl: ${error.message}`;
+                }
+                
+                alert(`Kunne ikke indlæse data fra Firebase.\n\nFejl: ${error.message}\n\nTjek venligst:\n1. Er Firestore Database aktiveret?\n2. Er reglerne sat til "test mode"?\n3. Se browser console (F12) for detaljer.`);
+            }
+        }
+
+        async function refreshData() {
+            await loadSubmissions();
+            const indicator = document.getElementById('saveIndicator');
+            indicator.textContent = '🔄 Opdateret!';
+            indicator.classList.add('show');
+            setTimeout(() => indicator.classList.remove('show'), 2000);
+        }
+
+        // Form submission
+        document.getElementById('answerForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!db || !firebaseInitialized) {
+                alert('Fejl: Firebase ikke forbundet. Kontakt din lærer.');
+                console.error('Firebase not initialized when trying to submit');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sender...';
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const questionId = parseInt(urlParams.get('q'));
+            const studentName = document.getElementById('studentName').value.trim();
+            const answer = document.getElementById('studentAnswer').value.trim();
+
+            console.log('Attempting to submit:', { questionId, studentName, answer });
+            console.log('Firebase initialized:', firebaseInitialized);
+            console.log('Database object:', db);
+
+            try {
+                const docRef = await db.collection('submissions').add({
+                    questionId,
+                    studentName,
+                    answer,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    submittedAt: new Date().toISOString() // Backup timestamp
+                });
+
+                console.log('✅ Submission successful! Document ID:', docRef.id);
+                console.log('Document written to Firestore with ID:', docRef.id);
+
+                document.getElementById('answerForm').style.display = 'none';
+                document.getElementById('successMessage').style.display = 'block';
+
+                setTimeout(() => {
+                    document.getElementById('successMessage').style.display = 'none';
+                    document.getElementById('answerForm').style.display = 'block';
+                    document.getElementById('answerForm').reset();
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Send svar';
+                }, 3000);
+            } catch (error) {
+                console.error('❌ Submit error details:', error);
+                console.error('Error code:', error.code);
+                console.error('Error message:', error.message);
+                console.error('Full error object:', JSON.stringify(error, null, 2));
+                
+                document.getElementById('errorMessage').textContent = `❌ Fejl: ${error.message}. Se console for detaljer.`;
+                document.getElementById('errorMessage').style.display = 'block';
+                
+                alert(`Kunne ikke gemme svar!\n\nFejl: ${error.message}\n\nKontakt din lærer og vis denne besked.`);
+                
+                setTimeout(() => {
+                    document.getElementById('errorMessage').style.display = 'none';
+                }, 5000);
+                
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send svar';
+            }
+        });
+
+        // View functions
+        function showSetup() {
+            setView('setupView');
         }
 
         function showQuestion(questionId) {
             const index = parseInt(questionId) - 1;
             document.getElementById('questionNumber').textContent = `Nissedør #${questionId}`;
             document.getElementById('questionText').textContent = questions[index];
+            setView('questionView');
             
-            document.getElementById('setupView').classList.remove('active');
-            document.getElementById('questionView').classList.add('active');
-            document.getElementById('adminView').classList.remove('active');
-            document.getElementById('qrView').classList.remove('active');
+            // Show connection status
+            const statusDiv = document.getElementById('questionConnectionStatus');
+            if (firebaseInitialized && db) {
+                statusDiv.className = 'connection-status connected';
+                statusDiv.textContent = '✓ Klar til at modtage svar';
+                statusDiv.style.display = 'block';
+                console.log('Question view: Firebase ready');
+            } else {
+                statusDiv.className = 'connection-status error';
+                statusDiv.textContent = '❌ Ingen forbindelse - kontakt lærer';
+                statusDiv.style.display = 'block';
+                console.error('Question view: Firebase NOT ready');
+                document.getElementById('submitBtn').disabled = true;
+            }
         }
 
         function showAdmin() {
-            document.getElementById('setupView').classList.remove('active');
-            document.getElementById('questionView').classList.remove('active');
-            document.getElementById('adminView').classList.add('active');
-            document.getElementById('qrView').classList.remove('active');
-            
+            setView('adminView');
             updateStats();
             displaySubmissions();
-            updateFilters();
         }
 
         function showQRCodes() {
-            if (!baseURL) {
-                alert('Du skal først opsætte base URL!');
-                showSetup();
-                return;
-            }
-
-            document.getElementById('setupView').classList.remove('active');
-            document.getElementById('questionView').classList.remove('active');
-            document.getElementById('adminView').classList.remove('active');
-            document.getElementById('qrView').classList.add('active');
-            
-            document.getElementById('displayBaseURL').textContent = baseURL;
+            setView('qrView');
             generateQRCodes();
         }
 
-        function generateQRCodes() {
-            const qrGrid = document.getElementById('qrGrid');
-            qrGrid.innerHTML = '';
-
-            for (let i = 1; i <= 10; i++) {
-                const qrCard = document.createElement('div');
-                qrCard.className = 'qr-card';
-                
-                const title = document.createElement('h3');
-                title.textContent = `Nissedør #${i}`;
-                qrCard.appendChild(title);
-
-                const qrDiv = document.createElement('div');
-                qrDiv.className = 'qr-code';
-                qrDiv.id = `qr${i}`;
-                qrCard.appendChild(qrDiv);
-
-                const questionText = document.createElement('p');
-                questionText.textContent = questions[i-1];
-                questionText.style.fontSize = '0.9em';
-                questionText.style.color = '#4a5568';
-                questionText.style.marginTop = '10px';
-                qrCard.appendChild(questionText);
-
-                const urlText = document.createElement('p');
-                urlText.textContent = `${baseURL}?q=${i}`;
-                urlText.style.fontSize = '0.7em';
-                urlText.style.color = '#a0aec0';
-                urlText.style.marginTop = '5px';
-                urlText.style.wordBreak = 'break-all';
-                qrCard.appendChild(urlText);
-
-                qrGrid.appendChild(qrCard);
-
-                // Generate QR code
-                new QRCode(qrDiv, {
-                    text: `${baseURL}?q=${i}`,
-                    width: 200,
-                    height: 200
-                });
-            }
+        function showQuestionEditor() {
+            setView('editorView');
+            renderQuestionEditor();
         }
 
-        // Handle form submission
-        document.getElementById('answerForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            const questionId = urlParams.get('q');
-            const studentName = document.getElementById('studentName').value.trim();
-            const answer = document.getElementById('studentAnswer').value.trim();
+        function showStudentReports() {
+            setView('reportsView');
+            renderStudentReports();
+        }
 
-            const submission = {
-                questionId: parseInt(questionId),
-                studentName: studentName,
-                answer: answer,
-                timestamp: new Date().toISOString()
-            };
+        function setView(viewId) {
+            ['setupView', 'questionView', 'adminView', 'qrView', 'editorView', 'reportsView'].forEach(id => {
+                document.getElementById(id).classList.remove('active');
+            });
+            document.getElementById(viewId).classList.add('active');
+        }
 
-            submissions.push(submission);
-            localStorage.setItem('submissions', JSON.stringify(submissions));
+        function hideLoading() {
+            document.getElementById('loadingIndicator').style.display = 'none';
+        }
 
-            // Show success message
-            document.getElementById('answerForm').style.display = 'none';
-            document.getElementById('successMessage').style.display = 'block';
+        function showError(message) {
+            hideLoading();
+            document.getElementById('loadingIndicator').innerHTML = `<div style="color: #e53e3e;">${message}</div>`;
+            document.getElementById('loadingIndicator').style.display = 'block';
+        }
 
-            setTimeout(() => {
-                document.getElementById('successMessage').style.display = 'none';
-                document.getElementById('answerForm').style.display = 'block';
-                document.getElementById('answerForm').reset();
-            }, 3000);
-        });
-
+        // Stats and display
         function updateStats() {
-            const totalSubs = submissions.length;
-            const uniqueStudentsSet = new Set(submissions.map(s => s.studentName.toLowerCase()));
-            const uniqueStudentsCount = uniqueStudentsSet.size;
-            const questionsAnsweredSet = new Set(submissions.map(s => s.questionId));
-            const questionsAnsweredCount = questionsAnsweredSet.size;
-
-            document.getElementById('totalSubmissions').textContent = totalSubs;
-            document.getElementById('uniqueStudents').textContent = uniqueStudentsCount;
-            document.getElementById('questionsAnswered').textContent = questionsAnsweredCount;
+            document.getElementById('totalSubmissions').textContent = submissions.length;
+            
+            const uniqueStudents = new Set(submissions.map(s => s.studentName.toLowerCase()));
+            document.getElementById('uniqueStudents').textContent = uniqueStudents.size;
+            
+            const questionsAnswered = new Set(submissions.map(s => s.questionId));
+            document.getElementById('questionsAnswered').textContent = questionsAnswered.size;
+            
+            // Calculate perfect scores
+            const studentScores = calculateAllStudentScores();
+            const perfectCount = Object.values(studentScores).filter(s => s.total === 10 && s.correct === 10).length;
+            document.getElementById('perfectScores').textContent = perfectCount;
         }
 
         function displaySubmissions() {
@@ -621,85 +860,218 @@
                 return;
             }
 
-            // Sort by timestamp (newest first)
-            const sorted = [...submissions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            
+            const sorted = [...submissions].sort((a, b) => {
+                if (!a.timestamp || !b.timestamp) return 0;
+                return b.timestamp.seconds - a.timestamp.seconds;
+            });
+
             container.innerHTML = sorted.map(sub => `
                 <div class="submission-item">
-                    <div class="submission-header">
-                        <span class="student-name">${sub.studentName}</span>
-                        <span class="question-num">Nissedør #${sub.questionId}</span>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <strong>${sub.studentName}</strong>
+                        <span style="color: #667eea;">Nissedør #${sub.questionId}</span>
                     </div>
-                    <div style="color: #718096; margin-bottom: 10px; font-weight: 500;">
-                        ${questions[sub.questionId - 1]}
-                    </div>
-                    <div class="answer-text">${sub.answer}</div>
-                    <div class="timestamp">${new Date(sub.timestamp).toLocaleString('da-DK')}</div>
+                    <div style="color: #718096; margin-bottom: 10px;">${questions[sub.questionId - 1]}</div>
+                    <div style="padding: 12px; background: #f7fafc; border-radius: 6px;">${sub.answer}</div>
+                    ${sub.timestamp ? `<div style="font-size: 0.85em; color: #a0aec0; margin-top: 8px;">
+                        ${new Date(sub.timestamp.seconds * 1000).toLocaleString('da-DK')}
+                    </div>` : ''}
                 </div>
             `).join('');
         }
 
-        function updateFilters() {
-            // Update student filter
-            const studentFilter = document.getElementById('filterStudent');
-            const uniqueStudents = [...new Set(submissions.map(s => s.studentName))].sort();
-            studentFilter.innerHTML = '<option value="">Alle elever</option>' + 
-                uniqueStudents.map(name => `<option value="${name}">${name}</option>`).join('');
+        function generateQRCodes() {
+            const grid = document.getElementById('qrGrid');
+            grid.innerHTML = '';
 
-            // Update question filter
-            const questionFilter = document.getElementById('filterQuestion');
-            questionFilter.innerHTML = '<option value="">Alle spørgsmål</option>' +
-                Array.from({length: 10}, (_, i) => i + 1)
-                    .map(num => `<option value="${num}">Nissedør #${num}</option>`).join('');
-        }
-
-        function filterSubmissions() {
-            const studentFilter = document.getElementById('filterStudent').value;
-            const questionFilter = document.getElementById('filterQuestion').value;
-
-            let filtered = submissions;
-
-            if (studentFilter) {
-                filtered = filtered.filter(s => s.studentName === studentFilter);
+            for (let i = 1; i <= 10; i++) {
+                const card = document.createElement('div');
+                card.className = 'qr-card';
+                card.innerHTML = `<h3>Nissedør #${i}</h3>`;
+                
+                const qrDiv = document.createElement('div');
+                qrDiv.style.margin = '20px auto';
+                card.appendChild(qrDiv);
+                
+                const text = document.createElement('p');
+                text.textContent = questions[i-1];
+                text.style.fontSize = '0.9em';
+                text.style.color = '#4a5568';
+                card.appendChild(text);
+                
+                grid.appendChild(card);
+                
+                new QRCode(qrDiv, {
+                    text: `${baseURL}?q=${i}`,
+                    width: 200,
+                    height: 200
+                });
             }
+        }
 
-            if (questionFilter) {
-                filtered = filtered.filter(s => s.questionId === parseInt(questionFilter));
+        function renderQuestionEditor() {
+            const container = document.getElementById('questionEditorList');
+            container.innerHTML = '';
+
+            for (let i = 0; i < 10; i++) {
+                const div = document.createElement('div');
+                div.className = 'submission-item';
+                div.innerHTML = `
+                    <h3 style="color: #667eea; margin-bottom: 15px;">Nissedør #${i + 1}</h3>
+                    <div class="form-group">
+                        <label>Spørgsmål:</label>
+                        <textarea id="q${i}" rows="2">${questions[i]}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Facit (korrekt svar):</label>
+                        <input type="text" id="a${i}" value="${answerKeys[i] || ''}" placeholder="F.eks.: Fotosyntese">
+                    </div>
+                `;
+                container.appendChild(div);
             }
-
-            // Temporarily replace submissions for display
-            const originalSubmissions = submissions;
-            submissions = filtered;
-            displaySubmissions();
-            submissions = originalSubmissions;
         }
 
-        function downloadData() {
-            const data = {
-                exportDate: new Date().toISOString(),
-                questions: questions,
-                submissions: submissions
-            };
+        function saveQuestions() {
+            const newQ = [];
+            const newA = [];
 
-            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `nissedoer-data-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        function clearAllData() {
-            if (confirm('Er du sikker på, at du vil slette ALLE besvarelser? Dette kan ikke fortrydes!')) {
-                if (confirm('Sidste advarsel! Dette sletter alt data permanent.')) {
-                    submissions = [];
-                    localStorage.removeItem('submissions');
-                    showAdmin();
+            for (let i = 0; i < 10; i++) {
+                const q = document.getElementById(`q${i}`).value.trim();
+                const a = document.getElementById(`a${i}`).value.trim();
+                
+                if (!q) {
+                    alert(`Spørgsmål #${i + 1} må ikke være tomt!`);
+                    return;
                 }
+                
+                newQ.push(q);
+                newA.push(a);
             }
+
+            questions = newQ;
+            answerKeys = newA;
+            
+            localStorage.setItem('customQuestions', JSON.stringify(questions));
+            localStorage.setItem('answerKeys', JSON.stringify(answerKeys));
+            
+            const indicator = document.getElementById('saveIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => indicator.classList.remove('show'), 2000);
+        }
+
+        function calculateAllStudentScores() {
+            const scores = {};
+            
+            submissions.forEach(sub => {
+                if (!scores[sub.studentName]) {
+                    scores[sub.studentName] = { total: 0, correct: 0, answers: {} };
+                }
+                
+                const isCorrect = checkAnswer(sub.answer, answerKeys[sub.questionId - 1]);
+                
+                scores[sub.studentName].total++;
+                if (isCorrect === true) scores[sub.studentName].correct++;
+                scores[sub.studentName].answers[sub.questionId] = { answer: sub.answer, isCorrect };
+            });
+
+            return scores;
+        }
+
+        function checkAnswer(studentAnswer, correctAnswer) {
+            if (!correctAnswer || correctAnswer.trim() === '') return null;
+
+            const normalize = (text) => text.toLowerCase().trim().replace(/\s+/g, ' ').replace(/[.,!?;:]/g, '');
+            
+            const ns = normalize(studentAnswer);
+            const nc = normalize(correctAnswer);
+
+            if (ns === nc) return true;
+            if (ns.includes(nc)) return true;
+            if (nc.includes(ns) && ns.length > 2) return true;
+
+            return false;
+        }
+
+        function renderStudentReports() {
+            const container = document.getElementById('reportsList');
+            
+            if (submissions.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #a0aec0; padding: 40px;">Ingen besvarelser endnu</p>';
+                return;
+            }
+
+            const studentData = {};
+            submissions.forEach(sub => {
+                if (!studentData[sub.studentName]) {
+                    studentData[sub.studentName] = { submissions: {}, correct: 0, answered: 0 };
+                }
+                
+                const isCorrect = checkAnswer(sub.answer, answerKeys[sub.questionId - 1]);
+                studentData[sub.studentName].submissions[sub.questionId] = { ...sub, isCorrect };
+                studentData[sub.studentName].answered++;
+                if (isCorrect === true) studentData[sub.studentName].correct++;
+            });
+
+            const sorted = Object.keys(studentData).sort();
+
+            container.innerHTML = sorted.map(name => {
+                const student = studentData[name];
+                const score = student.correct;
+                const total = student.answered;
+                
+                return `
+                    <div class="student-report-card">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0;">
+                            <h2 style="color: #2d3748;">${name}</h2>
+                            <div>
+                                <span style="padding: 8px 16px; border-radius: 20px; background: ${total === 10 ? '#48bb78' : '#ed8936'}; color: white; font-weight: bold; margin-right: 10px;">
+                                    ${total}/10 besvaret
+                                </span>
+                                <span style="padding: 8px 16px; border-radius: 20px; background: ${score === 10 ? '#48bb78' : score >= 8 ? '#4299e1' : score >= 6 ? '#ed8936' : '#fc8181'}; color: white; font-weight: bold;">
+                                    ${score}/10 korrekte
+                                </span>
+                            </div>
+                        </div>
+                        ${Array.from({length: 10}, (_, i) => i + 1).map(qId => {
+                            const sub = student.submissions[qId];
+                            if (!sub) {
+                                return `
+                                    <div style="padding: 15px; margin-bottom: 15px; background: #f7fafc; border-radius: 8px; border-left: 3px solid #cbd5e0;">
+                                        <strong style="color: #667eea;">Nissedør #${qId}</strong>
+                                        <div style="color: #718096; margin-top: 5px;">${questions[qId - 1]}</div>
+                                        <div style="color: #e53e3e; margin-top: 10px; font-style: italic;">❌ Ikke besvaret</div>
+                                    </div>
+                                `;
+                            }
+                            
+                            let badge = '';
+                            if (sub.isCorrect === true) badge = '<span style="padding: 4px 12px; border-radius: 12px; background: #c6f6d5; color: #22543d; font-size: 0.85em; font-weight: bold;">✓ Korrekt</span>';
+                            else if (sub.isCorrect === false) badge = '<span style="padding: 4px 12px; border-radius: 12px; background: #fed7d7; color: #742a2a; font-size: 0.85em; font-weight: bold;">✗ Forkert</span>';
+                            else badge = '<span style="padding: 4px 12px; border-radius: 12px; background: #e2e8f0; color: #4a5568; font-size: 0.85em; font-weight: bold;">? Ingen facit</span>';
+                            
+                            return `
+                                <div style="padding: 15px; margin-bottom: 15px; background: #f7fafc; border-radius: 8px; border-left: 3px solid #667eea;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                        <div>
+                                            <strong style="color: #667eea;">Nissedør #${qId}</strong>
+                                            ${badge}
+                                        </div>
+                                    </div>
+                                    <div style="color: #718096; margin-bottom: 10px;">${questions[qId - 1]}</div>
+                                    <div style="padding: 12px; background: white; border-radius: 6px; margin-bottom: 8px;">
+                                        <strong>Elevens svar:</strong> ${sub.answer}
+                                    </div>
+                                    ${answerKeys[qId - 1] ? `
+                                        <div style="padding: 10px; background: #e6fffa; border-radius: 6px; color: #234e52; font-size: 0.9em;">
+                                            <strong>Facit:</strong> ${answerKeys[qId - 1]}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }).join('');
         }
     </script>
 </body>
